@@ -12,9 +12,6 @@ workflows:
     max_build_duration: 60
     environment:
       xcode: "16.0"
-      ios_signing:
-        distribution_type: development
-        bundle_identifier: com.tutormeter.app
       vars:
         XCODE_PROJECT: Tutormeter.xcodeproj
         XCODE_SCHEME: Tutormeter
@@ -43,13 +40,15 @@ workflows:
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO
-      - name: Build archive
+      - name: Build archive (no signing)
         script: |
           xcodebuild archive \
             -project $XCODE_PROJECT \
             -scheme $XCODE_SCHEME \
-              -archivePath build/ios/archive/Tutormeter.xcarchive \
-            CODE_SIGN_STYLE=Manual
+            -archivePath build/ios/archive/Tutormeter.xcarchive \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
     artifacts:
       - build/ios/archive/Tutormeter.xcarchive
       - TestResults.xcresult
