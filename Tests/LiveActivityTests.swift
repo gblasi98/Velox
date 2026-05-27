@@ -132,6 +132,7 @@ struct VeloxActivityAttributesTests {
 
 // MARK: - Live Activity Manager Unit Tests
 
+@MainActor
 struct LiveActivityManagerUnitTests {
 
     @Test("Initial state has no active activity")
