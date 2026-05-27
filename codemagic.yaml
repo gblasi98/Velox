@@ -19,7 +19,7 @@ workflows:
       events:
         - push
       branch_patterns:
-        - pattern: main
+        - pattern: master
         - pattern: develop
         - pattern: 'feature/*'
       cancel_previous_builds: true
