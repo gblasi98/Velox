@@ -124,7 +124,7 @@ final class VeloxCarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDe
             ]
         } else {
             return [
-                CPTextButton(title: "Avvia Monitoraggio") { [weak self] _ in
+                CPTextButton(title: "Avvia Monitoraggio", textStyle: .normal) { [weak self] _ in
                     let _ = tracking.startTracking()
                     self?.refreshTemplate()
                 }
