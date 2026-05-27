@@ -13,6 +13,7 @@ import CoreLocation
 ///
 /// Delegates processed GPS fixes to the SpeedCalculator via a callback closure.
 @MainActor
+@MainActor
 final class LocationTracker: NSObject {
     // MARK: - Dependencies
     private let locationManager: CLLocationManager
@@ -171,6 +172,15 @@ final class LocationTracker: NSObject {
     func feedIMU(acceleration: Double, deltaTime: TimeInterval) {
         speedCalculator.processIMU(acceleration: acceleration, deltaTime: deltaTime)
     }
+
+    /// Configures the Kalman filter with calibration-derived parameters.
+    func configureFilter(processNoisePos: Double, processNoiseVel: Double, measurementNoise: Double) {
+        speedCalculator.configureFilter(
+            processNoisePos: processNoisePos,
+            processNoiseVel: processNoiseVel,
+            measurementNoise: measurementNoise
+        )
+    }
 }
 
 // MARK: - CLLocationManagerDelegate
@@ -188,7 +198,7 @@ extension LocationTracker: CLLocationManagerDelegate {
         }
     }
 
-    func locationManager(
+    nonisolated func locationManager(
         _ manager: CLLocationManager,
         didFailWithError error: Error
     ) {

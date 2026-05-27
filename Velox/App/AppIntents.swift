@@ -159,6 +159,7 @@ struct VeloxAppShortcuts: AppShortcutsProvider {
 /// Manages location services, sensor fusion, and state machine.
 ///
 /// Updated in Phase 3 with Intent support and session summary.
+@MainActor
 @Observable
 final class TrackingManager {
     static let shared = TrackingManager()
@@ -208,7 +209,7 @@ final class TrackingManager {
         // Start calibration then begin tracking
         Task {
             if let result = await calib.calibrate(using: imu) {
-                tracker.calculator.configureFilter(
+                tracker.configureFilter(
                     processNoisePos: result.noiseVariance * 0.5,
                     processNoiseVel: result.noiseVariance * 0.8,
                     measurementNoise: result.noiseVariance * 20.0
