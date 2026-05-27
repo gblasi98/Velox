@@ -4,6 +4,7 @@ import Foundation
 
 // MARK: - Background Task Manager Tests
 
+@MainActor
 struct BackgroundTaskManagerTests {
 
     @Test("Task identifiers are correct")
@@ -23,6 +24,7 @@ struct BackgroundTaskManagerTests {
 
 // MARK: - Session Store Tests
 
+@MainActor
 struct SessionStoreTests {
     private let store: SessionStore
 
