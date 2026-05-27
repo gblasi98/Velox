@@ -319,6 +319,7 @@ struct SpeedCalculatorKalmanTests {
 
 // MARK: - Calibration Manager Tests
 
+@MainActor
 struct CalibrationManagerTests {
 
     @Test("Initial state has no calibration")

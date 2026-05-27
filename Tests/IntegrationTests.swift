@@ -71,6 +71,7 @@ struct IntegrationTests {
 
 // MARK: - Kalman Filter + Speed Calculator Integration
 
+@MainActor
 struct KalmanIntegrationTests {
 
     @Test("GPS fixes converge Kalman to true speed")
