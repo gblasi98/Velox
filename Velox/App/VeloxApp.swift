@@ -12,6 +12,7 @@ import SwiftUI
 /// - Manual: Tap "Start" in the app
 @main
 struct VeloxApp: App {
+    @UIApplicationDelegateAdaptor(VeloxAppDelegate.self) var appDelegate
     @State private var trackingManager = TrackingManager.shared
 
     var body: some Scene {
