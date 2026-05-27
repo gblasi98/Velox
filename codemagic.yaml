@@ -1,0 +1,178 @@
+# Codemagic CI/CD Configuration for Velox
+# Documentation: https://docs.codemagic.io/yaml/yaml/
+
+workflows:
+
+  # ──────────────────────────────────────────
+  # Development Build (on push to dev/main)
+  # ──────────────────────────────────────────
+  ios-dev-build:
+    name: iOS Dev Build
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    environment:
+      xcode: "16.0"
+      ios_signing:
+        distribution_type: development
+        bundle_identifier: com.velox.app
+      vars:
+        XCODE_PROJECT: Velox.xcodeproj
+        XCODE_SCHEME: Velox
+        APP_STORE_CONNECT_ISSUER_ID: Encrypted(...)
+        APP_STORE_CONNECT_KEY_ID: Encrypted(...)
+        APP_STORE_CONNECT_PRIVATE_KEY: Encrypted(...)
+        CERTIFICATE_PRIVATE_KEY: Encrypted(...)
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+        - pattern: develop
+        - pattern: 'feature/*'
+      cancel_previous_builds: true
+    scripts:
+      - name: Install XcodeGen
+        script: |
+          brew install xcodegen
+      - name: Generate Xcode project
+        script: |
+          xcodegen generate --spec project.yml
+      - name: Run unit tests
+        script: |
+          xcodebuild test \
+            -project $XCODE_PROJECT \
+            -scheme $XCODE_SCHEME \
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+            -resultBundlePath TestResults.xcresult \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+      - name: Build archive
+        script: |
+          xcodebuild archive \
+            -project $XCODE_PROJECT \
+            -scheme $XCODE_SCHEME \
+            -archivePath build/ios/archive/Velox.xcarchive \
+            CODE_SIGN_STYLE=Manual
+    artifacts:
+      - build/ios/archive/Velox.xcarchive
+      - TestResults.xcresult
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Logs/Test/*.xcresult
+
+  # ──────────────────────────────────────────
+  # TestFlight Release (on tag 'release/*')
+  # ──────────────────────────────────────────
+  ios-testflight:
+    name: iOS TestFlight Release
+    instance_type: mac_mini_m2
+    max_build_duration: 90
+    environment:
+      xcode: "16.0"
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.velox.app
+      vars:
+        XCODE_PROJECT: Velox.xcodeproj
+        XCODE_SCHEME: Velox
+        APP_STORE_CONNECT_ISSUER_ID: Encrypted(...)
+        APP_STORE_CONNECT_KEY_ID: Encrypted(...)
+        APP_STORE_CONNECT_PRIVATE_KEY: Encrypted(...)
+        CERTIFICATE_PRIVATE_KEY: Encrypted(...)
+    triggering:
+      events:
+        - tag
+      tag_patterns:
+        - pattern: 'release/*'
+        - pattern: 'beta/*'
+      cancel_previous_builds: false
+    scripts:
+      - name: Install XcodeGen
+        script: |
+          brew install xcodegen
+      - name: Generate Xcode project
+        script: |
+          xcodegen generate --spec project.yml
+      - name: Set build number from Codemagic
+        script: |
+          agvtool new-version -all $PROJECT_BUILD_NUMBER
+      - name: Run unit tests
+        script: |
+          xcodebuild test \
+            -project $XCODE_PROJECT \
+            -scheme $XCODE_SCHEME \
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+            -resultBundlePath TestResults.xcresult \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+      - name: Build and sign archive
+        script: |
+          xcodebuild archive \
+            -project $XCODE_PROJECT \
+            -scheme $XCODE_SCHEME \
+            -archivePath build/ios/archive/Velox.xcarchive \
+            CODE_SIGN_STYLE=Manual
+    artifacts:
+      - build/ios/archive/Velox.xcarchive
+      - TestResults.xcresult
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        beta_groups:
+          - Velox Internal Testers
+        submit_to_app_store: false
+        cancel_previous_submissions: true
+        # App Store compliance:
+        # - Encryption: No (no network transmission)
+        # - IDFA: No (no ads or tracking)
+      email:
+        recipients:
+          - you@example.com
+        notify:
+          success: true
+          failure: true
+
+  # ──────────────────────────────────────────
+  # Pull Request Validation (PR checks only)
+  # ──────────────────────────────────────────
+  ios-pr-check:
+    name: iOS PR Check
+    instance_type: mac_mini_m2
+    max_build_duration: 30
+    environment:
+      xcode: "16.0"
+      vars:
+        XCODE_PROJECT: Velox.xcodeproj
+        XCODE_SCHEME: Velox
+    triggering:
+      events:
+        - pull_request
+      cancel_previous_builds: true
+    scripts:
+      - name: Install XcodeGen
+        script: |
+          brew install xcodegen
+      - name: Generate Xcode project
+        script: |
+          xcodegen generate --spec project.yml
+      - name: Run unit tests
+        script: |
+          xcodebuild test \
+            -project $XCODE_PROJECT \
+            -scheme $XCODE_SCHEME \
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+      - name: Check for warnings
+        script: |
+          xcodebuild clean build \
+            -project $XCODE_PROJECT \
+            -scheme $XCODE_SCHEME \
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            SWIFT_TREAT_WARNINGS_AS_ERRORS=YES 2>&1 | tee build.log
+          echo "Build completed with warnings treated as errors"
