@@ -19,7 +19,7 @@ settings:
     ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
 
 targets:
-  Velox:
+  Tutormeter:
     type: application
     platform: iOS
     deploymentTarget: "17.0"
@@ -78,10 +78,10 @@ targets:
           - location
           - audio
           - fetch
-        NSLocationWhenInUseUsageDescription: "Velox uses your location to calculate average speed in speed camera zones."
-        NSLocationAlwaysAndWhenInUseUsageDescription: "Velox needs background location access to track your speed while using navigation apps."
-        NSMotionUsageDescription: "Velox uses motion sensors to improve speed accuracy in tunnels and areas with poor GPS."
-        NSSiriUsageDescription: "Velox uses Siri to let you start tracking with a voice command."
+        NSLocationWhenInUseUsageDescription: "Tutormeter uses your location to calculate average speed in speed camera zones."
+        NSLocationAlwaysAndWhenInUseUsageDescription: "Tutormeter needs background location access to track your speed while using navigation apps."
+        NSMotionUsageDescription: "Tutormeter uses motion sensors to improve speed accuracy in tunnels and areas with poor GPS."
+        NSSiriUsageDescription: "Tutormeter uses Siri to let you start tracking with a voice command."
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false
           UISceneConfigurations:
@@ -89,7 +89,7 @@ targets:
               - UISceneConfigurationName: Default Configuration
                 UISceneDelegateClassName: $(PRODUCT_MODULE_NAME).SceneDelegate
 
-  VeloxTests:
+  TutormeterTests:
     type: bundle.unit-test
     platform: iOS
     deploymentTarget: "17.0"
@@ -102,18 +102,18 @@ targets:
         GENERATE_INFOPLIST_FILE: "YES"
         PRODUCT_BUNDLE_IDENTIFIER: com.tutormeter.app.tests
     dependencies:
-      - target: Velox
+      - target: Tutormeter
 
 schemes:
   Tutormeter:
     build:
       targets:
-        Velox: all
+        Tutormeter: all
     run:
       config: Debug
     test:
       config: Debug
       targets:
-        - VeloxTests
+        - TutormeterTests
     archive:
       config: Release
