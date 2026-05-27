@@ -35,15 +35,15 @@ struct DeepLinkHandler {
         switch host {
         case "start-tracking":
             let wait = params["wait"] != nil
-            if wait {
-                TrackingManager.shared.startTracking() // immediate = false
-            } else {
+            Task { @MainActor in
                 TrackingManager.shared.startTracking()
             }
             return true
 
         case "stop-tracking":
-            let _ = TrackingManager.shared.stopTracking()
+            Task { @MainActor in
+                let _ = TrackingManager.shared.stopTracking()
+            }
             return true
 
         case "status":

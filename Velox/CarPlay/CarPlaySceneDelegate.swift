@@ -117,7 +117,7 @@ final class VeloxCarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDe
 
         if tracking.isTracking {
             return [
-                CPTextButton(title: "Ferma Monitoraggio") { [weak self] _ in
+                CPTextButton(title: "Ferma Monitoraggio", textStyle: .normal) { [weak self] _ in
                     let _ = tracking.stopTracking()
                     self?.refreshTemplate()
                 }
@@ -159,7 +159,7 @@ final class VeloxCarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDe
         guard let controller = interfaceController else { return }
 
         let template = createSpeedTemplate()
-        controller.rootTemplate = template
+        controller.setRootTemplate(template, animated: true)
 
         // If we're showing a tab bar or other templates, update them too
         controller.templates.forEach { cpTemplate in
