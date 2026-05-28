@@ -62,6 +62,8 @@ workflows:
     instance_type: mac_mini_m2
     max_build_duration: 90
     environment:
+      groups:
+        - appstore
       xcode: "16.0"
       ios_signing:
         distribution_type: app_store
