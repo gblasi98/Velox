@@ -178,7 +178,7 @@ final class SessionStore {
         let totalTrackingHours: Double
 
         var formattedDistance: String {
-            String(format: "%.0f km", totalDistanceKm)
+            String(format: "%.0f km", totalDistanceKm.rounded())
         }
 
         var formattedTime: String {

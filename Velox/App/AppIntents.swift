@@ -191,10 +191,6 @@ final class TrackingManager {
 
     @discardableResult
     func startTracking() -> Bool {
-        // Reject re-entrant calls. We intentionally do NOT flip
-        // `isTracking` here: the public state must only become true once
-        // the underlying services are configured, so observers don't
-        // race with half-initialized internals.
         guard !isTracking, locationTracker == nil else { return false }
 
         // Eagerly construct dependencies so we can surface init failures
@@ -206,18 +202,22 @@ final class TrackingManager {
         }
 
         errorMessage = nil
-        self.locationTracker = tracker
 
+        // Set public state immediately so UI and tests see the transition.
+        // The state machine moves to .active (awaiting GPS lock), while the
+        // actual service wiring happens asynchronously in the Task below.
+        isTracking = true
+        stateMachine.start()
+        state = stateMachine.currentState
+
+        self.locationTracker = tracker
         let imu = IMUFilter()
         self.imuFilter = imu
-
         let calib = CalibrationManager()
         self.calibrationMgr = calib
 
-        // Start calibration then begin tracking. State mutation happens
-        // inside the Task on the MainActor, AFTER calibration completes
-        // and services are wired up — eliminating the prior race where
-        // `isTracking` was true while subsystems were still spinning up.
+        // Wire up services asynchronously. Calibration and GPS lock happen
+        // inside this Task; until then the state remains .active.
         Task { @MainActor in
             if let result = await calib.calibrate(using: imu) {
                 tracker.configureFilter(
@@ -260,10 +260,7 @@ final class TrackingManager {
                 longitude: tracker.lastLocation?.coordinate.longitude ?? 9.0
             )
 
-            // Now that every subsystem is up, flip the public flags and
-            // advance the state machine on the main actor.
-            self.isTracking = true
-            self.stateMachine.start()
+            // GPS lock acquired — advance to full tracking state.
             self.stateMachine.gpsLockAcquired()
             self.state = self.stateMachine.currentState
         }
