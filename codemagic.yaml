@@ -98,47 +98,20 @@ workflows:
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO
-      - name: Create App Store provisioning profile via API
-        script: |
-          # Create JWT for App Store Connect API
-          KEY_ID="$APP_STORE_CONNECT_KEY_ID"
-          ISSUER_ID="$APP_STORE_CONNECT_ISSUER_ID"
-          KEY_FILE=$(mktemp)
-          echo "$APP_STORE_CONNECT_PRIVATE_KEY" > "$KEY_FILE"
-
-          # Generate JWT
-          JWT=$(ruby -r jwt -e "puts JWT.encode({iss: '$ISSUER_ID', iat: Time.now.to_i, exp: Time.now.to_i + 1200, aud: 'appstoreconnect-v1'}, OpenSSL::PKey::EC.new(File.read('$KEY_FILE')), 'ES256', {kid: '$KEY_ID', typ: 'JWT'})" 2>/dev/null)
-
-          # Get bundle ID
-          BUNDLE_RESP=$(curl -s -H "Authorization: Bearer $JWT" "https://api.appstoreconnect.apple.com/v1/bundleIds?filter[identifier]=com.tutormeter.app")
-          BUNDLE_ID=$(echo "$BUNDLE_RESP" | ruby -r json -e "puts JSON.parse(STDIN.read)['data']&.first&.dig('id')")
-
-          # Get distribution certificate
-          CERT_RESP=$(curl -s -H "Authorization: Bearer $JWT" "https://api.appstoreconnect.apple.com/v1/certificates?filter[certificateType]=IOS_DISTRIBUTION")
-          CERT_ID=$(echo "$CERT_RESP" | ruby -r json -e "puts JSON.parse(STDIN.read)['data']&.first&.dig('id')")
-
-          echo "Bundle ID: $BUNDLE_ID | Certificate: $CERT_ID"
-
-          if [ -n "$BUNDLE_ID" ] && [ -n "$CERT_ID" ]; then
-            curl -s -X POST "https://api.appstoreconnect.apple.com/v1/profiles" \
-              -H "Authorization: Bearer $JWT" \
-              -H "Content-Type: application/json" \
-              -d "{\"data\":{\"type\":\"profiles\",\"attributes\":{\"name\":\"Tutormeter App Store\",\"profileType\":\"IOS_APP_STORE\"},\"relationships\":{\"bundleId\":{\"data\":{\"type\":\"bundleIds\",\"id\":\"$BUNDLE_ID\"}},\"certificates\":{\"data\":[{\"type\":\"certificates\",\"id\":\"$CERT_ID\"}]}}}}"
-            echo "Profile created."
-          else
-            echo "Missing bundle ID or certificate - cannot create profile."
-          fi
-          rm -f "$KEY_FILE"
       - name: Set up iOS code signing
         script: |
           xcode-project use-ios-signing
+          echo "=== Available env ==="
+          env | grep -iE "APPLE|TEAM|CERT|PROV" | sort || true
       - name: Build and sign archive
         script: |
           xcodebuild archive \
             -project $XCODE_PROJECT \
             -scheme $XCODE_SCHEME \
             -archivePath build/ios/archive/Tutormeter.xcarchive \
-            -allowProvisioningUpdates
+            -allowProvisioningUpdates \
+            -allowProvisioningDeviceRegistration \
+            CODE_SIGN_STYLE=Automatic
     artifacts:
       - build/ios/archive/Tutormeter.xcarchive
       - TestResults.xcresult
