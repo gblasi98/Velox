@@ -23,6 +23,12 @@ workflows:
         script: brew install xcodegen
       - name: Generate Xcode project
         script: xcodegen generate --spec project.yml
+      - name: Inject Info.plist validation keys
+        script: |
+          PLIST="Velox/App/Info.plist"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleIconName string AppIcon" "$PLIST" 2>/dev/null || /usr/libexec/PlistBuddy -c "Set :CFBundleIconName AppIcon" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :UILaunchStoryboardName string LaunchScreen" "$PLIST" 2>/dev/null || /usr/libexec/PlistBuddy -c "Set :UILaunchStoryboardName LaunchScreen" "$PLIST"
+          echo "Patched Info.plist"
       - name: Run unit tests
         script: |
           xcodebuild test -project $XCODE_PROJECT -scheme $XCODE_SCHEME \
