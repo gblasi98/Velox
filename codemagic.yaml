@@ -57,8 +57,8 @@ workflows:
   # ──────────────────────────────────────────
   # TestFlight Release (on tag 'release/*')
   # ──────────────────────────────────────────
-  ios-testflight:
-    name: iOS TestFlight Release
+  ios-release:
+    name: iOS App Store Release
     instance_type: mac_mini_m2
     max_build_duration: 90
     environment:
@@ -105,9 +105,8 @@ workflows:
             -scheme $XCODE_SCHEME \
             -archivePath build/ios/archive/Tutormeter.xcarchive \
             CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO \
-             DEVELOPMENT_TEAM=RW4U7HX5AH
+             CODE_SIGNING_REQUIRED=NO \
+             CODE_SIGNING_ALLOWED=NO
     artifacts:
       - build/ios/archive/Tutormeter.xcarchive
       - TestResults.xcresult
