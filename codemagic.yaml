@@ -14,7 +14,7 @@ workflows:
       groups:
         - appstore
         - ios_signing
-      xcode: "16.0"
+      xcode: "latest"
       vars:
         XCODE_PROJECT: Tutormeter.xcodeproj
         XCODE_SCHEME: Tutormeter
