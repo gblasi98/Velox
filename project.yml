@@ -27,6 +27,8 @@ targets:
       - path: Velox
         type: group
     resources:
+      - path: Velox/App/Assets.xcassets
+        type: group
       - path: Resources
         type: group
     settings:

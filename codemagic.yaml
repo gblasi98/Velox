@@ -23,21 +23,15 @@ workflows:
         script: brew install xcodegen
       - name: Generate Xcode project
         script: xcodegen generate --spec project.yml
-      - name: Inject Info.plist validation keys (no storyboard, no asset catalog)
+      - name: Inject Info.plist validation keys
         script: |
           PLIST="Velox/App/Info.plist"
-          # UILaunchScreen dictionary (iOS 14+ - no storyboard needed)
           /usr/libexec/PlistBuddy -c "Add :UILaunchScreen dict" "$PLIST" 2>/dev/null
           /usr/libexec/PlistBuddy -c "Add :UILaunchScreen:UIColorName string LaunchScreenColor" "$PLIST" 2>/dev/null || /usr/libexec/PlistBuddy -c "Set :UILaunchScreen:UIColorName LaunchScreenColor" "$PLIST"
-          /usr/libexec/PlistBuddy -c "Delete :UILaunchStoryboardName" "$PLIST" 2>/dev/null
-          /usr/libexec/PlistBuddy -c "Delete :CFBundleIconName" "$PLIST" 2>/dev/null
-          # Old-school CFBundleIcons with direct PNG files
-          /usr/libexec/PlistBuddy -c "Add :CFBundleIcons dict" "$PLIST" 2>/dev/null
-          /usr/libexec/PlistBuddy -c "Add :CFBundleIcons:CFBundlePrimaryIcon dict" "$PLIST" 2>/dev/null
-          /usr/libexec/PlistBuddy -c "Add :CFBundleIcons:CFBundlePrimaryIcon:CFBundleIconFiles array" "$PLIST" 2>/dev/null
-          /usr/libexec/PlistBuddy -c "Add :CFBundleIcons:CFBundlePrimaryIcon:CFBundleIconFiles:0 string Icon-60@2x.png" "$PLIST" 2>/dev/null || /usr/libexec/PlistBuddy -c "Set :CFBundleIcons:CFBundlePrimaryIcon:CFBundleIconFiles:0 Icon-60@2x.png" "$PLIST"
-          /usr/libexec/PlistBuddy -c "Add :CFBundleIcons:CFBundlePrimaryIcon:CFBundleIconName string AppIcon" "$PLIST" 2>/dev/null || /usr/libexec/PlistBuddy -c "Set :CFBundleIcons:CFBundlePrimaryIcon:CFBundleIconName AppIcon" "$PLIST"
-          echo "Info.plist patched for old-school icons + UILaunchScreen"
+          /usr/libexec/PlistBuddy -c "Delete :UILaunchStoryboardName" "$PLIST" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Delete :CFBundleIcons" "$PLIST" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :CFBundleIconName string AppIcon" "$PLIST" 2>/dev/null || /usr/libexec/PlistBuddy -c "Set :CFBundleIconName AppIcon" "$PLIST"
+          echo "Patched: UILaunchScreen + CFBundleIconName=AppIcon"
       - name: Run unit tests
         script: |
           xcodebuild test -project $XCODE_PROJECT -scheme $XCODE_SCHEME \
