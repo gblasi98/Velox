@@ -29,12 +29,28 @@ workflows:
             -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
             -resultBundlePath TestResults.xcresult \
             CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
+      - name: Set up signing (keychain + profile)
+        script: |
+          echo "=== Setting up keychain ==="
+          security create-keychain -p "" build.keychain 2>/dev/null || true
+          security default-keychain -s build.keychain 2>/dev/null || true
+          security unlock-keychain -p "" build.keychain 2>/dev/null || true
+          echo "$CM_CERTIFICATE" | base64 --decode > /tmp/cert.p12 2>/dev/null || echo "$CM_CERTIFICATE" | base64 -D > /tmp/cert.p12
+          security import /tmp/cert.p12 -k build.keychain -P "$CM_CERTIFICATE_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security 2>/dev/null || true
+          security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain 2>/dev/null || true
+          echo "=== Installing provisioning profile ==="
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          echo "$CM_PROVISIONING_PROFILE" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/d0215d26-1fda-4901-8a6f-7b1924fb10fd.mobileprovision 2>/dev/null
+          echo "$CM_PROVISIONING_PROFILE" | base64 -D > ~/Library/MobileDevice/Provisioning\ Profiles/d0215d26-1fda-4901-8a6f-7b1924fb10fd.mobileprovision 2>/dev/null || true
+          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/
+          echo "=== Available identities ==="
+          security find-identity -v -p codesigning build.keychain 2>/dev/null || true
       - name: Build signed archive
         script: |
           xcodebuild archive -project $XCODE_PROJECT -scheme $XCODE_SCHEME \
             -archivePath build/ios/archive/Tutormeter.xcarchive \
             CODE_SIGN_STYLE=Manual \
-            CODE_SIGN_IDENTITY="iPhone Distribution" \
+            CODE_SIGN_IDENTITY="iPhone Distribution: GIANMARCO BLASI (RW4U7HX5AH)" \
             PROVISIONING_PROFILE_SPECIFIER="d0215d26-1fda-4901-8a6f-7b1924fb10fd"
     artifacts:
       - build/ios/archive/Tutormeter.xcarchive
