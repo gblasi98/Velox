@@ -64,8 +64,10 @@ workflows:
     environment:
       groups:
         - appstore
-        - ios_signing
       xcode: "16.0"
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.tutormeter.app
       vars:
         XCODE_PROJECT: Tutormeter.xcodeproj
         XCODE_SCHEME: Tutormeter
@@ -93,56 +95,47 @@ workflows:
             -scheme $XCODE_SCHEME \
             -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
             -resultBundlePath TestResults.xcresult \
-             CODE_SIGN_IDENTITY="" \
-             CODE_SIGNING_REQUIRED=NO \
-             CODE_SIGNING_ALLOWED=NO
-      - name: Create provisioning profile (Fastlane sigh)
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+      - name: Write App Store Connect API key
         script: |
-          gem install fastlane -q --no-document 2>/dev/null || true
-          echo "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/apikey.p8
-          fastlane sigh --app_identifier com.tutormeter.app \
-            --username gblasi98 \
-            --team_id RW4U7HX5AH \
-            --provisioning_name "Tutormeter CI" \
-            --ignore_profiles_with_different_name \
-            --filename "Tutormeter.mobileprovision" \
-            --api_key_path /tmp/apikey.p8 \
-            --api_key_issuer $APP_STORE_CONNECT_ISSUER_ID \
-            --api_key $APP_STORE_CONNECT_KEY_ID \
-            --force
-      - name: Build unsigned archive
+          echo "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/authkey.p8
+      - name: Create export options plist
+        script: |
+          cat > /tmp/exportOptions.plist << 'EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>app-store</string>
+              <key>signingStyle</key>
+              <string>automatic</string>
+          </dict>
+          </plist>
+          EOF
+      - name: Build, sign, and archive
         script: |
           xcodebuild archive \
             -project $XCODE_PROJECT \
             -scheme $XCODE_SCHEME \
             -archivePath build/ios/archive/Tutormeter.xcarchive \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
-      - name: Export signed IPA
+            -allowProvisioningUpdates \
+            -authenticationKeyIssuerID $APP_STORE_CONNECT_ISSUER_ID \
+            -authenticationKeyID $APP_STORE_CONNECT_KEY_ID \
+            -authenticationKeyPath /tmp/authkey.p8
+      - name: Export IPA
         script: |
-          cat > /tmp/export.plist << 'EOF'
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>method</key><string>app-store</string>
-              <key>teamID</key><string>RW4U7HX5AH</string>
-              <key>signingStyle</key><string>automatic</string>
-          </dict>
-          </plist>
-          EOF
-          echo "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/authkey.p8
           xcodebuild -exportArchive \
             -archivePath build/ios/archive/Tutormeter.xcarchive \
             -exportPath build/ios/ipa \
-            -exportOptionsPlist /tmp/export.plist \
+            -exportOptionsPlist /tmp/exportOptions.plist \
             -allowProvisioningUpdates \
             -authenticationKeyIssuerID $APP_STORE_CONNECT_ISSUER_ID \
             -authenticationKeyID $APP_STORE_CONNECT_KEY_ID \
             -authenticationKeyPath /tmp/authkey.p8
     artifacts:
-      - build/ios/ipa/Tutormeter.ipa
       - build/ios/archive/Tutormeter.xcarchive
       - TestResults.xcresult
     publishing:
