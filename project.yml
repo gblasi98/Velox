@@ -39,11 +39,7 @@ targets:
     attributes:
       SystemCapabilities:
         com.apple.BackgroundModes:
-          enabled: true
-          modes:
-            - location
-            - audio
-            - fetch
+          enabled: false
         com.apple.Push:
           enabled: true
         com.apple.developer.siri:

@@ -37,13 +37,6 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>location</string>
-		<string>audio</string>
-		<string>fetch</string>
-		<string>car-play</string>
-	</array>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Tutormeter uses your location to calculate your average speed in speed camera zones. Data stays on your device.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
