@@ -11,6 +11,9 @@ workflows:
     instance_type: mac_mini_m2
     max_build_duration: 60
     environment:
+      groups:
+        - appstore
+        - ios_signing
       xcode: "16.0"
       vars:
         XCODE_PROJECT: Tutormeter.xcodeproj
@@ -38,22 +41,51 @@ workflows:
             -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
             -resultBundlePath TestResults.xcresult \
             CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
-      - name: Build archive (no signing)
+             CODE_SIGNING_REQUIRED=NO \
+             CODE_SIGNING_ALLOWED=NO
+      - name: Build archive
         script: |
-          xcodebuild archive \
-            -project $XCODE_PROJECT \
-            -scheme $XCODE_SCHEME \
-            -archivePath build/ios/archive/Tutormeter.xcarchive \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
+          if [ -n "$CM_TAG" ]; then
+            echo "=== Release build: signing for App Store ==="
+            xcodebuild archive \
+              -project $XCODE_PROJECT \
+              -scheme $XCODE_SCHEME \
+              -archivePath build/ios/archive/Tutormeter.xcarchive \
+              CODE_SIGN_STYLE=Manual \
+              CODE_SIGN_IDENTITY="iPhone Distribution" \
+              PROVISIONING_PROFILE_SPECIFIER="d0215d26-1fda-4901-8a6f-7b1924fb10fd"
+          else
+            echo "=== Dev build: no signing ==="
+            xcodebuild archive \
+              -project $XCODE_PROJECT \
+              -scheme $XCODE_SCHEME \
+              -archivePath build/ios/archive/Tutormeter.xcarchive \
+              CODE_SIGN_IDENTITY="" \
+              CODE_SIGNING_REQUIRED=NO \
+              CODE_SIGNING_ALLOWED=NO
+          fi
     artifacts:
       - build/ios/archive/Tutormeter.xcarchive
       - TestResults.xcresult
       - $HOME/Library/Developer/Xcode/DerivedData/**/Logs/Test/*.xcresult
+    publishing:
+      app_store_connect:
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_ID
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        submit_to_testflight: true
+        beta_groups:
+          - Tutormeter Internal Testers
+        submit_to_app_store: false
+      email:
+        recipients:
+          - CHANGE_ME@example.com
+        notify:
+          success: true
+          failure: true
 
+  # ──────────────────────────────────────────
+  # Pull Request Validation (PR checks only)
   # ──────────────────────────────────────────
   # TestFlight Release (on tag 'release/*')
   # ──────────────────────────────────────────
