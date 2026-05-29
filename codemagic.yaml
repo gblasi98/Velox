@@ -32,19 +32,27 @@ workflows:
       - name: Set up signing (keychain + profile)
         script: |
           echo "=== Setting up keychain ==="
-          security create-keychain -p "" build.keychain 2>/dev/null || true
-          security default-keychain -s build.keychain 2>/dev/null || true
-          security unlock-keychain -p "" build.keychain 2>/dev/null || true
-          echo "$CM_CERTIFICATE" | base64 --decode > /tmp/cert.p12 2>/dev/null || echo "$CM_CERTIFICATE" | base64 -D > /tmp/cert.p12
-          security import /tmp/cert.p12 -k build.keychain -P "$CM_CERTIFICATE_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security 2>/dev/null || true
-          security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain 2>/dev/null || true
+          security create-keychain -p "temporary" build.keychain || true
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "temporary" build.keychain
+          
+          echo "=== Decoding certificate ==="
+          printenv CM_CERTIFICATE | base64 --decode > /tmp/cert.p12 2>/dev/null || printenv CM_CERTIFICATE | base64 -D > /tmp/cert.p12
+          ls -la /tmp/cert.p12
+          
+          echo "=== Importing certificate ==="
+          security import /tmp/cert.p12 -k build.keychain -P "$CM_CERTIFICATE_PASSWORD" -A -T /usr/bin/codesign
+          echo "Import result: $?"
+          
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "temporary" build.keychain 2>/dev/null || true
+          
           echo "=== Installing provisioning profile ==="
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          echo "$CM_PROVISIONING_PROFILE" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/d0215d26-1fda-4901-8a6f-7b1924fb10fd.mobileprovision 2>/dev/null
-          echo "$CM_PROVISIONING_PROFILE" | base64 -D > ~/Library/MobileDevice/Provisioning\ Profiles/d0215d26-1fda-4901-8a6f-7b1924fb10fd.mobileprovision 2>/dev/null || true
+          printenv CM_PROVISIONING_PROFILE | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/d0215d26-1fda-4901-8a6f-7b1924fb10fd.mobileprovision 2>/dev/null
+          printenv CM_PROVISIONING_PROFILE | base64 -D > ~/Library/MobileDevice/Provisioning\ Profiles/d0215d26-1fda-4901-8a6f-7b1924fb10fd.mobileprovision 2>/dev/null || true
           ls -la ~/Library/MobileDevice/Provisioning\ Profiles/
           echo "=== Available identities ==="
-          security find-identity -v -p codesigning build.keychain 2>/dev/null || true
+          security find-identity -v -p codesigning build.keychain
       - name: Build signed archive
         script: |
           xcodebuild archive -project $XCODE_PROJECT -scheme $XCODE_SCHEME \
