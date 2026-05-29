@@ -102,7 +102,7 @@ workflows:
       - name: Install provisioning profile
         script: |
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          echo "$CM_PROVISIONING_PROFILE" | base64 -d > ~/Library/MobileDevice/Provisioning\ Profiles/Tutormeter.mobileprovision
+          echo "$CM_PROVISIONING_PROFILE" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/Tutormeter.mobileprovision 2>/dev/null || echo "$CM_PROVISIONING_PROFILE" | base64 -D > ~/Library/MobileDevice/Provisioning\ Profiles/Tutormeter.mobileprovision
           echo "Profile installed: $(ls ~/Library/MobileDevice/Provisioning\ Profiles/)"
       - name: Write App Store Connect API key
         script: |
