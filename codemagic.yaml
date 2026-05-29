@@ -174,7 +174,9 @@ workflows:
             -allowProvisioningUpdates \
             -authenticationKeyIssuerID $APP_STORE_CONNECT_ISSUER_ID \
             -authenticationKeyID $APP_STORE_CONNECT_KEY_ID \
-            -authenticationKeyPath /tmp/authkey.p8
+            -authenticationKeyPath /tmp/authkey.p8 \
+            DEVELOPMENT_TEAM=RW4U7HX5AH \
+            CODE_SIGN_STYLE=Automatic
     artifacts:
       - build/ios/archive/Tutormeter.xcarchive
       - TestResults.xcresult
