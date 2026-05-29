@@ -93,6 +93,22 @@ workflows:
             CODE_SIGN_STYLE=Manual \
             CODE_SIGN_IDENTITY="iPhone Distribution: GIANMARCO BLASI (RW4U7HX5AH)" \
              PROVISIONING_PROFILE_SPECIFIER="d0215d26-1fda-4901-8a6f-7b1924fb10fd"
+      - name: Inject compiled resources (icons + storyboard)
+        script: |
+          APP="build/ios/archive/Tutormeter.xcarchive/Products/Applications/Tutormeter.app"
+          echo "=== Compiling asset catalog ==="
+          /usr/bin/actool Velox/App/Assets.xcassets --compile "$APP" \
+            --platform iphoneos --minimum-deployment-target 17.0 \
+            --app-icon AppIcon --output-partial-info-plist /tmp/partial.plist 2>&1 || echo "actool failed"
+          echo "=== Compiling storyboard ==="
+          /usr/bin/ibtool --compile "$APP/LaunchScreen.storyboardc" \
+            Velox/App/LaunchScreen.storyboard 2>&1 || echo "ibtool failed"
+          echo "=== Checking results ==="
+          ls -la "$APP/Assets.car" 2>/dev/null || echo "No Assets.car"
+          ls -la "$APP/LaunchScreen.storyboardc" 2>/dev/null || echo "No storyboardc"
+          echo "=== Re-signing modified app ==="
+          codesign -f -s "iPhone Distribution: GIANMARCO BLASI (RW4U7HX5AH)" \
+            --keychain build.keychain "$APP" 2>&1 || echo "Re-sign failed"
       - name: Create export plist
         script: |
           cat > /tmp/export.plist << 'PLIST'
